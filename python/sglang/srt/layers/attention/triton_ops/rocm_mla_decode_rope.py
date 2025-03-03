@@ -20,14 +20,18 @@ It supports page size = 1.
 # https://github.com/ModelTC/lightllm/blob/96353e868a840db4d103138caf15ed9dbea8c186/lightllm/models/deepseek2/triton_kernel/gqa_flash_decoding_stage1.py
 # https://github.com/ModelTC/lightllm/blob/96353e868a840db4d103138caf15ed9dbea8c186/lightllm/models/deepseek2/triton_kernel/gqa_flash_decoding_stage2.py
 
+import torch
 import triton
 import triton.language as tl
 
 from sglang.srt.layers.attention.triton_ops.decode_attention import (
     _decode_softmax_reducev_fwd,
 )
-
-
+from sglang.srt.utils import (
+    direct_register_custom_op,
+    is_cuda_alike,
+    supports_custom_op,
+)
 def is_hip():
     return triton.runtime.driver.active.get_current_target().backend == "hip"
 
@@ -399,25 +403,44 @@ def _decode_grouped_att_m_fwd_rope(
     )
 
 
+# def decode_attention_fwd_grouped_rope(
+#     q,
+#     k_buffer,
+#     v_buffer,
+#     o,
+#     kv_indptr,
+#     kv_indices,
+#     k_pe_tokens,
+#     kv_lora_rank,
+#     rotary_dim,
+#     cos_sin_cache,
+#     positions,
+#     attn_logits,
+#     num_kv_splits,
+#     sm_scale,
+#     logit_cap=0.0,
+#     use_rope=False,
+#     is_neox_style=False,
+# ):
 def decode_attention_fwd_grouped_rope(
-    q,
-    k_buffer,
-    v_buffer,
-    o,
-    kv_indptr,
-    kv_indices,
-    k_pe_tokens,
-    kv_lora_rank,
-    rotary_dim,
-    cos_sin_cache,
-    positions,
-    attn_logits,
-    num_kv_splits,
-    sm_scale,
-    logit_cap=0.0,
-    use_rope=False,
-    is_neox_style=False,
-):
+    q: torch.Tensor,
+    k_buffer: torch.Tensor,
+    v_buffer: torch.Tensor,
+    o: torch.Tensor,
+    kv_indptr: torch.Tensor,
+    kv_indices: torch.Tensor,
+    k_pe_tokens: torch.Tensor,
+    kv_lora_rank: int,
+    rotary_dim: int,
+    cos_sin_cache: torch.Tensor,
+    positions: torch.Tensor,
+    attn_logits: torch.Tensor,
+    num_kv_splits: int,
+    sm_scale: float,
+    logit_cap: float = 0.0,
+    use_rope: bool = False,
+    is_neox_style: bool = False,
+) -> None:
     _decode_grouped_att_m_fwd_rope(
         q,
         k_buffer,
@@ -437,3 +460,31 @@ def decode_attention_fwd_grouped_rope(
         is_neox_style,
     )
     _decode_softmax_reducev_fwd(attn_logits, q, o, v_buffer, kv_indptr, num_kv_splits)
+
+def decode_attention_fwd_grouped_rope_fake(
+    q: torch.Tensor, #
+    k_buffer: torch.Tensor, #
+    v_buffer: torch.Tensor, #
+    o: torch.Tensor, # changed
+    kv_indptr: torch.Tensor, #
+    kv_indices: torch.Tensor, #
+    k_pe_tokens: torch.Tensor, # changed
+    kv_lora_rank: int, #
+    rotary_dim: int, #
+    cos_sin_cache: torch.Tensor, #
+    positions: torch.Tensor, #
+    attn_logits: torch.Tensor, # changed
+    num_kv_splits: int, #
+    sm_scale: float, #
+    logit_cap: float = 0.0, #
+    use_rope: bool = False, #
+    is_neox_style: bool = False, #
+) -> None:
+    pass
+
+direct_register_custom_op(
+    op_name="decode_attention_fwd_grouped_rope",
+    op_func=decode_attention_fwd_grouped_rope,
+    mutates_args=["o", "k_pe_tokens", "attn_logits"],
+    fake_impl=decode_attention_fwd_grouped_rope_fake,
+)

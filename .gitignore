@@ -226,4 +226,7 @@ compile_commands.json
 # VSCode
 .vscode
 
-1
+# Custom, remove later
+sgl-kernel/src/sgl-kernel/csrc/moe_align_kernel.hip
+sgl-kernel/src/sgl-kernel/include/utils_hip.h
+output_c1b10.txt

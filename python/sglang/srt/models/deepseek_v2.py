@@ -759,7 +759,7 @@ class DeepseekV2AttentionMLA(nn.Module):
         )
         val_cache_buf = key_cache_buf[..., : self.kv_lora_rank]
 
-        decode_attention_fwd_grouped_rope(
+        torch.ops.sglang.decode_attention_fwd_grouped_rope(
             q_input,
             key_cache_buf,
             val_cache_buf,
