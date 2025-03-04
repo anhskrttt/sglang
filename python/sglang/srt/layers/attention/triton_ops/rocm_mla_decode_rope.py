@@ -418,6 +418,28 @@ def decode_attention_fwd_grouped_rope(
     use_rope=False,
     is_neox_style=False,
 ):
+    output_file = "decode_attention_fwd_grouped_rope_params.txt"
+
+    # Write input params shapes (or value) and type (e.g. torch.float16) to file
+    with open(output_file, "a") as f:
+        f.write("--- decode_attention_fwd_grouped_rope ---\n")
+        f.write(f"q shape: {q.shape} {q.dtype}\n")
+        f.write(f"k_buffer shape: {k_buffer.shape} {k_buffer.dtype}\n")
+        f.write(f"v_buffer shape: {v_buffer.shape} {v_buffer.dtype}\n")
+        f.write(f"o shape: {o.shape} {o.dtype}\n")
+        f.write(f"kv_indptr shape: {kv_indptr.shape} {kv_indptr.dtype}\n")
+        f.write(f"kv_indices shape: {kv_indices.shape} {kv_indices.dtype}\n")
+        f.write(f"k_pe_tokens shape: {k_pe_tokens.shape} {k_pe_tokens.dtype}\n")
+        f.write(f"kv_lora_rank: {kv_lora_rank}\n")
+        f.write(f"rotary_dim: {rotary_dim}\n")
+        f.write(f"cos_sin_cache shape: {cos_sin_cache.shape} {cos_sin_cache.dtype}\n")
+        f.write(f"positions shape: {positions.shape} {positions.dtype}\n")
+        f.write(f"attn_logits shape: {attn_logits.shape} {attn_logits.dtype}\n")
+        f.write(f"num_kv_splits: {num_kv_splits}\n") # 16
+        f.write(f"sm_scale: {sm_scale}\n") # 0.1352337788608801
+        # f.write(f"logit_cap: {logit_cap}\n") # 0.0
+        # f.write("\n")
+        
     _decode_grouped_att_m_fwd_rope(
         q,
         k_buffer,
